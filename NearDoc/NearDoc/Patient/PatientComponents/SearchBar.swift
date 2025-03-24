@@ -10,10 +10,10 @@ struct SearchBar: View {
             TextField("Search doctor, dispensary, or appointment", text: $searchText)
                 .font(.subheadline)
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(Color.gray.opacity(0.15))
         .cornerRadius(10)
-        .padding(.horizontal)
     }
 }
 

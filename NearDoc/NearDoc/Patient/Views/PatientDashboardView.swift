@@ -7,21 +7,20 @@ struct PatientDashboardView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Main Content
+                // Header fixed at the top
+                HeaderView(
+                                    profileImageName: "profile",
+                                    userName: "Jane Doe",
+                                    notificationCount: notificationCount,
+                                    notificationAction: {
+                                        print("Notification button tapped!")
+                                    },
+                                    searchQuery: $searchQuery
+                                )
+
+                //MARK: - Upcoming APPT
                 ScrollView {
                     VStack(spacing: 20) {
-                        HeaderView(
-                            profileImageName: "profile",
-                            userName: "Jane Doe",
-                            notificationCount: notificationCount,
-                            notificationAction: {
-                                print("Notification button tapped!")
-                            }
-                        )
-                        .padding(.top, 0)
-                        .background(Color.white)
-                        
-                        SearchBar(searchText: $searchQuery)
                         
                         HStack {
                             Text("Upcoming Appointments")
@@ -61,10 +60,17 @@ struct PatientDashboardView: View {
                         }
                         .padding(.bottom, -20)
                         
+                        //MARK: - Nearby Dispensaries
+                        
                         HStack {
                             Text("Nearby Dispensaries")
                                 .font(.headline)
                             Spacer()
+                            
+                            Text("View All")
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                            
                         }
                         .padding(.horizontal)
                         .padding(.bottom, -30)
@@ -88,6 +94,8 @@ struct PatientDashboardView: View {
                             .padding(.horizontal)
                             .padding(.vertical)
                         }
+                        
+                        //MARK: - Buttons
                         
                         VStack(spacing: 16) {
                             Button(action: {
@@ -123,10 +131,9 @@ struct PatientDashboardView: View {
                 }
                 .background(Color(.systemGray6))
                 
-                // Bottom Navigation Bar
-                BottomNavBar(activeTab: "Home") // Set "Home" as active for this view
-                                    .frame(height: 30)
-        
+             
+                BottomNavBar(activeTab: "Home")
+                    .frame(height: 30)
             }
             .navigationBarHidden(true)
         }
