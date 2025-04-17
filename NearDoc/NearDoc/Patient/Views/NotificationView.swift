@@ -1,119 +1,183 @@
 import SwiftUI
 
+// Move NotificationItem outside of NotificationsView
+struct NotificationItem: Identifiable {
+    let id: String
+    let title: String
+    let message: String
+    let date: Date
+    var isRead: Bool
+}
+
 struct NotificationsView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @State private var notifications: [NotificationItem] = []
+    @State private var isLoading: Bool = true
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header
+        VStack {
+            // Navigation Bar
             HStack {
-                Button(action: {}) {
-                    Image(systemName: "chevron.left")
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "arrow.left")
+                        .font(.title3)
                         .foregroundColor(.black)
                 }
+                
+                Spacer()
+                
                 Text("Notifications")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.trailing, 24)  // Offset to center the title
-            }
-            
-            Text("New")
-                .font(.system(size: 14, weight: .medium))
-                .padding(.top, 10)
-            
-            // New notifications
-            VStack(spacing: 15) {
-                // Notification 1
-                NotificationCard(
-                    icon: "circle.fill",
-                    title: "Your appointment is confirmed for today at 2:30 PM",
-                    description: "Dr. Sarah Wilson - Dental Checkup",
-                    time: "10:30 AM",
-                    isNew: true
-                )
+                    .font(.headline)
                 
-                // Notification 2
-                NotificationCard(
-                    icon: "circle.fill",
-                    title: "Reminder: Your turn is approaching",
-                    description: "You're 3rd in line. Please be ready.",
-                    time: "9:45 AM",
-                    isNew: true
-                )
-            }
-            
-            Text("Previous Notifications")
-                .font(.system(size: 14, weight: .medium))
-                .padding(.top, 10)
-            
-            // Previous notifications
-            VStack(spacing: 15) {
-                // Notification 3
-                NotificationCard(
-                    icon: "",
-                    title: "Prescription updated",
-                    description: "Your prescription has been updated by Dr. Michael Brown",
-                    time: "Yesterday at 3:15 PM",
-                    isNew: false
-                )
+                Spacer()
                 
-                // Notification 4
-                NotificationCard(
-                    icon: "",
-                    title: "Payment successful",
-                    description: "Payment of $150 for dental cleaning has been processed",
-                    time: "Yesterday at 11:30 AM",
-                    isNew: false
-                )
+                Button(action: {
+                    // Mark all as read
+                    markAllAsRead()
+                }) {
+                    Text("Mark all as read")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
             }
+            .padding()
             
-            Spacer()
+            if isLoading {
+                Spacer()
+                ProgressView()
+                Spacer()
+            } else if notifications.isEmpty {
+                Spacer()
+                Text("No notifications")
+                    .foregroundColor(.gray)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 15) {
+                        ForEach(notifications) { notification in
+                            NotificationCard(notification: notification) {
+                                markAsRead(notificationId: notification.id)
+                            }
+                        }
+                    }
+                    .padding()
+                }
+            }
         }
-        .padding()
-        .background(Color.white)
+        .background(Color(red: 0.97, green: 0.97, blue: 0.97).edgesIgnoringSafeArea(.all))
+        .navigationBarHidden(true)
+        .onAppear {
+            loadNotifications()
+        }
+    }
+    
+    // Mock backend integration for notifications
+    private func loadNotifications() {
+        isLoading = true
+        
+        // Simulate network call with delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Generate mock notifications
+            self.notifications = [
+                NotificationItem(
+                    id: "1",
+                    title: "Your appointment is confirmed",
+                    message: "Your appointment with Dr. John Smith on April 22, 2025 is confirmed.",
+                    date: Date().addingTimeInterval(-86400),
+                    isRead: true
+                ),
+                NotificationItem(
+                    id: "2",
+                    title: "Reminder: Your turn is approaching",
+                    message: "Please be at the MedicalOne Center in the next 30 minutes.",
+                    date: Date().addingTimeInterval(-172800),
+                    isRead: false
+                ),
+                NotificationItem(
+                    id: "3",
+                    title: "Prescription updated",
+                    message: "Dr. Richard Wilson has updated your prescription. Check medications.",
+                    date: Date().addingTimeInterval(-259200),
+                    isRead: false
+                ),
+                NotificationItem(
+                    id: "4",
+                    title: "Payment successful",
+                    message: "Your payment of $120 for appointment with Dr. Susan Taylor has been received.",
+                    date: Date().addingTimeInterval(-345600),
+                    isRead: true
+                )
+            ]
+            
+            self.isLoading = false
+        }
+    }
+    
+    // Mark a notification as read
+    private func markAsRead(notificationId: String) {
+        if let index = notifications.firstIndex(where: { $0.id == notificationId }) {
+            notifications[index].isRead = true
+        }
+    }
+    
+    // Mark all notifications as read
+    private func markAllAsRead() {
+        for index in notifications.indices {
+            notifications[index].isRead = true
+        }
     }
 }
 
+// Notification card component
 struct NotificationCard: View {
-    let icon: String
-    let title: String
-    let description: String
-    let time: String
-    let isNew: Bool
+    let notification: NotificationItem  // Now this works because NotificationItem is in scope
+    let onTapped: () -> Void
     
     var body: some View {
-        HStack(alignment: .top, spacing: 15) {
-            // Blue dot for new notifications
-            if isNew {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 6)
-            } else {
-                // Empty space for alignment
-                Circle()
-                    .fill(Color.clear)
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 6)
+        Button(action: onTapped) {
+            HStack(alignment: .top, spacing: 15) {
+                Image(systemName: "bell.fill")
+                    .font(.title2)
+                    .foregroundColor(notification.isRead ? .gray : .blue)
+                    .frame(width: 24)
+                
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(notification.title)
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(notification.message)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(relativeTime(from: notification.date))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
+                
+                if !notification.isRead {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 10, height: 10)
+                }
             }
-            
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(description)
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-                Text(time)
-                    .font(.system(size: 11))
-                    .foregroundColor(.gray)
-                    .padding(.top, 2)
-            }
-            
-            Spacer()
+            .padding()
+            .background(notification.isRead ? Color.white : Color(red: 0.88, green: 0.93, blue: 1.0))
+            .cornerRadius(10)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 15)
-        .background(isNew ? Color(.systemGray6) : Color.white)
-        .cornerRadius(10)
+    }
+    
+    // Helper to display relative time
+    private func relativeTime(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

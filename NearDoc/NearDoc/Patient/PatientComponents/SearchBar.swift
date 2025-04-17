@@ -17,8 +17,4 @@ struct SearchBar: View {
     }
 }
 
-struct PatientDashboardView_Preview: PreviewProvider {
-    static var previews: some View {
-        PatientDashboardView()
-    }
-}
+

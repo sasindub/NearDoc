@@ -1,24 +1,19 @@
-//
-//  ContentView.swift
-//  NearDoc
-//
-//  Created by Sasindu Bandara on 2025-03-17.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @State private var isLoggedIn = false
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Near Doctor!")
+        if isLoggedIn {
+            MainTabView(isLoggedIn: $isLoggedIn)
+        } else {
+            LoginView(isLoggedIn: $isLoggedIn)
         }
-        .padding()
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
 }
