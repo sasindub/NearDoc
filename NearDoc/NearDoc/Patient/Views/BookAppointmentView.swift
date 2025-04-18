@@ -341,6 +341,7 @@ struct BookAppointmentView: View {
         
         let bookingRequest = BookingRequest(
             doctorId: selectedDoctor?.id ?? "1",
+            patientId: UserDefaults.standard.string(forKey: "userId") ?? "1", // Fixed placeholder
             date: dateFormatter.string(from: selectedDate),
             time: selectedTime
         )

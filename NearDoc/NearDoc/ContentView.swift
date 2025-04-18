@@ -2,12 +2,17 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var isLoggedIn = false
+    @State private var userType: LoginView.UserType = .patient
     
     var body: some View {
         if isLoggedIn {
-            MainTabView(isLoggedIn: $isLoggedIn)
+            if userType == .doctor {
+                DoctorMainView(isLoggedIn: $isLoggedIn)
+            } else {
+                MainTabView(isLoggedIn: $isLoggedIn)
+            }
         } else {
-            LoginView(isLoggedIn: $isLoggedIn)
+            LoginView(isLoggedIn: $isLoggedIn, selectedUserType: $userType)
         }
     }
 }

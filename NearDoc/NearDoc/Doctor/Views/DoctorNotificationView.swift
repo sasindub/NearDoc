@@ -1,54 +1,42 @@
 import SwiftUI
 
-struct NotificationsView: View {
-    @Environment(\.presentationMode) var presentationMode
+struct DoctorNotificationsView: View {
+    let doctorId: String
+    
     @State private var notifications: [NotificationItem] = []
-    @State private var isLoading: Bool = true
-    @State private var errorMessage: String = ""
+    @State private var isLoading = true
+    @State private var errorMessage = ""
     
     var body: some View {
         VStack {
-            // Navigation Bar
-            HStack {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Image(systemName: "arrow.left")
-                        .font(.title3)
-                        .foregroundColor(.black)
-                }
-                
-                Spacer()
-                
-                Text("Notifications")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Button(action: {
-                    markAllAsRead()
-                }) {
-                    Text("Mark all as read")
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                }
-            }
-            .padding()
-            
             if isLoading {
-                Spacer()
                 ProgressView()
-                Spacer()
+                    .padding()
             } else if notifications.isEmpty {
                 Spacer()
-                Text("No notifications")
-                    .foregroundColor(.gray)
+                
+                VStack(spacing: 20) {
+                    Image(systemName: "bell.slash.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.gray)
+                    
+                    Text("No Notifications")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                    
+                    Text("You don't have any notifications at this time.")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                
                 Spacer()
             } else {
                 ScrollView {
                     LazyVStack(spacing: 15) {
                         ForEach(notifications) { notification in
-                            NotificationCard(notification: notification) {
+                            DoctorNotificationCard(notification: notification) {
                                 markAsRead(notificationId: notification.id)
                             }
                         }
@@ -57,8 +45,16 @@ struct NotificationsView: View {
                 }
             }
         }
-        .background(Color(red: 0.97, green: 0.97, blue: 0.97).edgesIgnoringSafeArea(.all))
-        .navigationBarHidden(true)
+        .navigationTitle("Notifications")
+        .navigationBarItems(
+            trailing: Button(action: {
+                markAllAsRead()
+            }) {
+                Text("Mark all as read")
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+            }
+        )
         .onAppear {
             loadNotifications()
         }
@@ -73,44 +69,8 @@ struct NotificationsView: View {
         }
     }
     
-    // Backend integration for loading notifications
-    private func loadNotifications() {
-        isLoading = true
-        errorMessage = ""
-        
-        NetworkManager.shared.fetchData(endpoint: "/notifications?forDoctor=false") { (result: Result<[NotificationItem], Error>) in
-            self.isLoading = false
-            
-            switch result {
-            case .success(let notificationItems):
-                self.notifications = notificationItems
-            case .failure(let error):
-                self.errorMessage = "Failed to load notifications: \(error.localizedDescription)"
-            }
-        }
-    }
-    
-    // Mark a notification as read
-    private func markAsRead(notificationId: String) {
-        if let index = notifications.firstIndex(where: { $0.id == notificationId }) {
-            notifications[index].isRead = true
-        }
-    }
-    
-    // Mark all notifications as read
-    private func markAllAsRead() {
-        for index in notifications.indices {
-            notifications[index].isRead = true
-        }
-    }
-}
-
-// Notification card component
-struct NotificationCard: View {
-    let notification: NotificationItem
-    let onTapped: () -> Void
-    
-    var body: some View {
+    // Notification card
+    private func DoctorNotificationCard(notification: NotificationItem, onTapped: @escaping () -> Void) -> some View {
         Button(action: onTapped) {
             HStack(alignment: .top, spacing: 15) {
                 Image(systemName: "bell.fill")
@@ -145,6 +105,7 @@ struct NotificationCard: View {
             .padding()
             .background(notification.isRead ? Color.white : Color(red: 0.88, green: 0.93, blue: 1.0))
             .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 5)
         }
     }
     
@@ -154,10 +115,41 @@ struct NotificationCard: View {
         formatter.unitsStyle = .full
         return formatter.localizedString(for: date, relativeTo: Date())
     }
+    
+    // Load notifications from backend
+    private func loadNotifications() {
+        isLoading = true
+        errorMessage = ""
+        
+        NetworkManager.shared.fetchData(endpoint: "/notifications?forDoctor=true") { (result: Result<[NotificationItem], Error>) in
+            self.isLoading = false
+            
+            switch result {
+            case .success(let notifications):
+                self.notifications = notifications.sorted(by: { $0.date > $1.date })
+            case .failure(let error):
+                self.errorMessage = "Failed to load notifications: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    // Mark notification as read
+    private func markAsRead(notificationId: String) {
+        if let index = notifications.firstIndex(where: { $0.id == notificationId }) {
+            notifications[index].isRead = true
+        }
+    }
+    
+    // Mark all notifications as read
+    private func markAllAsRead() {
+        for index in notifications.indices {
+            notifications[index].isRead = true
+        }
+    }
 }
 
-struct NotificationsView_Previews: PreviewProvider {
+struct DoctorNotificationsView_Previews: PreviewProvider {
     static var previews: some View {
-        NotificationsView()
+        DoctorNotificationsView(doctorId: "1")
     }
 }

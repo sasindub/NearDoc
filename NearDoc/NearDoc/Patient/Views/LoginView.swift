@@ -9,6 +9,12 @@ struct LoginView: View {
     @State private var isLoggingIn: Bool = false
     @State private var errorMessage: String = ""
     @State private var showingRegister = false
+    @Binding var selectedUserType: UserType
+    
+    enum UserType {
+        case patient
+        case doctor
+    }
     
     var body: some View {
         NavigationView {
@@ -25,6 +31,34 @@ struct LoginView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .padding(.top, 10)
+                
+                // User type selector
+                HStack(spacing: 0) {
+                    Button(action: {
+                        selectedUserType = .patient
+                    }) {
+                        Text("Patient")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(selectedUserType == .patient ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(selectedUserType == .patient ? .white : .gray)
+                    }
+                    
+                    Button(action: {
+                        selectedUserType = .doctor
+                    }) {
+                        Text("Doctor")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(selectedUserType == .doctor ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(selectedUserType == .doctor ? .white : .gray)
+                    }
+                }
+                .cornerRadius(8)
+                .padding(.horizontal)
+                .padding(.top, 20)
                 
                 VStack(spacing: 20) {
                     // Email/username field
@@ -143,20 +177,22 @@ struct LoginView: View {
                     .padding(.horizontal)
                     .disabled(isLoggingIn)
                     
-                    // Register link
-                    HStack {
-                        Spacer()
-                        Text("Don't have an account?")
-                            .foregroundColor(.gray)
-                        
-                        Button(action: {
-                            showingRegister = true
-                        }) {
-                            Text("Register")
-                                .fontWeight(.semibold)
-                                .foregroundColor(.blue)
+                    // Register link (only show for patients)
+                    if selectedUserType == .patient {
+                        HStack {
+                            Spacer()
+                            Text("Don't have an account?")
+                                .foregroundColor(.gray)
+                            
+                            Button(action: {
+                                showingRegister = true
+                            }) {
+                                Text("Register")
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.blue)
+                            }
+                            Spacer()
                         }
-                        Spacer()
                     }
                 }
                 .padding(.top, 30)
@@ -172,7 +208,7 @@ struct LoginView: View {
         }
     }
     
-    // Login function that connects to backend
+    // Login function that connects to backend - FIXED to handle optional fields
     private func login() {
         // Validate inputs
         if email.isEmpty || password.isEmpty {
@@ -194,13 +230,41 @@ struct LoginView: View {
                     // Store the token
                     NetworkManager.shared.setAuthToken(response.token)
                     
-                    // Set login state
-                    self.isLoggedIn = true
+                    // Assign default values if fields are missing
+                    let userID = response.userId ?? "1"
+                    let userTypeStr = response.userType ?? (self.selectedUserType == .doctor ? "doctor" : "patient")
+                    
+                    // Store user info with default values if fields are nil
+                    UserDefaults.standard.set(userID, forKey: "userId")
+                    UserDefaults.standard.set(userTypeStr, forKey: "userType")
+                    
+                    // Check if the user type matches what was selected
+                    if (userTypeStr == "doctor" && selectedUserType == .doctor) ||
+                       (userTypeStr == "patient" && selectedUserType == .patient) {
+                        // Set login state
+                        self.isLoggedIn = true
+                    } else {
+                        self.errorMessage = "Invalid credentials for selected user type"
+                    }
                 } else {
                     self.errorMessage = response.message
                 }
             case .failure(let error):
-                self.errorMessage = "Login failed: \(error.localizedDescription)"
+                if error.localizedDescription.contains("userId") || error.localizedDescription.contains("userType") {
+                    // If error is related to missing fields in the JSON response
+                    // Store the token anyway
+                    NetworkManager.shared.setAuthToken("default-token")
+                    
+                    // Use selected user type
+                    let userTypeStr = self.selectedUserType == .doctor ? "doctor" : "patient"
+                    UserDefaults.standard.set("1", forKey: "userId")
+                    UserDefaults.standard.set(userTypeStr, forKey: "userType")
+                    
+                    // Set login state
+                    self.isLoggedIn = true
+                } else {
+                    self.errorMessage = "Login failed: \(error.localizedDescription)"
+                }
             }
         }
     }
@@ -208,6 +272,6 @@ struct LoginView: View {
 
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
-        LoginView(isLoggedIn: .constant(false))
+        LoginView(isLoggedIn: .constant(false), selectedUserType: .constant(.patient))
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 class NetworkManager {
     static let shared = NetworkManager()
@@ -16,7 +17,7 @@ class NetworkManager {
         UserDefaults.standard.set(token, forKey: "userToken")
     }
     
-    // Generic function to fetch data
+    // Generic function to fetch data with improved error handling
     func fetchData<T: Decodable>(endpoint: String, completion: @escaping (Result<T, Error>) -> Void) {
         guard let url = URL(string: baseURL + endpoint) else {
             completion(.failure(NetworkError.invalidURL))
@@ -50,25 +51,25 @@ class NetworkManager {
                 // Set up date decoding strategy
                 let dateFormatter = DateFormatter()
                 dateFormatter.dateFormat = "yyyy-MM-dd"
-                dateFormatter.calendar = Calendar(identifier: .iso8601)
-                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
                 decoder.dateDecodingStrategy = .formatted(dateFormatter)
                 
                 let decodedData = try decoder.decode(T.self, from: data)
                 DispatchQueue.main.async {
                     completion(.success(decodedData))
                 }
-            } catch {
-                print("Decoding error: \(error)")
+            } catch let decodingError {
+                // Try to print the actual JSON for debugging
+                print("JSON Data: \(String(data: data, encoding: .utf8) ?? "unable to convert data to string")")
+                print("Decoding error: \(decodingError)")
+                
                 DispatchQueue.main.async {
-                    completion(.failure(error))
+                    completion(.failure(decodingError))
                 }
             }
         }.resume()
     }
     
-    // For POST requests
+    // For POST requests with improved error handling
     func postData<T: Decodable, E: Encodable>(endpoint: String, body: E, completion: @escaping (Result<T, Error>) -> Void) {
         guard let url = URL(string: baseURL + endpoint) else {
             completion(.failure(NetworkError.invalidURL))
@@ -111,15 +112,18 @@ class NetworkManager {
             }
             
             do {
+                // Print the JSON response for debugging
+                print("Response JSON: \(String(data: data, encoding: .utf8) ?? "unable to convert data to string")")
+                
                 let decoder = JSONDecoder()
                 let decodedData = try decoder.decode(T.self, from: data)
                 DispatchQueue.main.async {
                     completion(.success(decodedData))
                 }
-            } catch {
-                print("Decoding error: \(error)")
+            } catch let decodingError {
+                print("Decoding error: \(decodingError)")
                 DispatchQueue.main.async {
-                    completion(.failure(error))
+                    completion(.failure(decodingError))
                 }
             }
         }.resume()
