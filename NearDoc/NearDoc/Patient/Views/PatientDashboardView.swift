@@ -54,7 +54,7 @@ struct HomeView: View {
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
-                    Text("Andrew Smith")
+                    Text("Saman Kumara")
                         .font(.title2)
                         .fontWeight(.bold)
                 }

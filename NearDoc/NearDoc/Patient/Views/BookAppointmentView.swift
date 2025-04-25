@@ -197,7 +197,7 @@ struct BookAppointmentView: View {
                             
                             Spacer()
                             
-                            Text("$\(Int.random(in: 100...200)).00")
+                            Text("LKR 1200.00")
                                 .font(.headline)
                                 .foregroundColor(.black)
                         }
