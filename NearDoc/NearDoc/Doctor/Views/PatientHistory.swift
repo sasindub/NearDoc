@@ -8,6 +8,10 @@ struct PatientHistoryView: View {
     @State private var isLoading = true
     @State private var errorMessage = ""
     @State private var searchText = ""
+    // Summarization states
+    @State private var showSummary = false
+    @State private var isSummarizing = false
+    @State private var summaryText = ""
     
     var body: some View {
         ScrollView {
@@ -48,6 +52,57 @@ struct PatientHistoryView: View {
                         prescriptionsCard(history.prescriptions)
                     }
                 }
+                
+                // --- Summarization Section START ---
+                Button(action: {
+                    showSummary = false
+                    isSummarizing = true
+                    // Simulate ML Kit summarization delay (demo)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                        summaryText = """
+                        This patient has a history of acute bronchiolitis and mild allergies (penicillin, sulfamide). Last treatment: Amoxicillin 500mg, 3/day. Recent reviews indicate symptom improvement. Continue current meds, monitor for allergy reactions, and follow up in 2 weeks.
+                        """
+                        isSummarizing = false
+                        showSummary = true
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "brain.head.profile")
+                        if isSummarizing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .padding(.leading, 4)
+                        }
+                        Text("Summarize Medical History")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(isSummarizing ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
+                .disabled(isSummarizing)
+                .padding(.top, 8)
+                
+                if showSummary {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Image(systemName: "text.justify")
+                                .foregroundColor(.blue)
+                            Text("Medication Summary")
+                                .font(.headline)
+                        }
+                        Text(summaryText)
+                            .font(.body)
+                            .padding(.top, 5)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.top, 4)
+                }
+                // --- Summarization Section END ---
             }
             .padding()
         }
@@ -65,6 +120,9 @@ struct PatientHistoryView: View {
             )
         }
     }
+    
+    // ... All your existing helper methods (patientInfoCard, medicalConditionsCard, etc.) below ...
+    // nothing changed in these!
     
     // Patient info card
     private func patientInfoCard(_ patient: Patient) -> some View {
@@ -140,6 +198,8 @@ struct PatientHistoryView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 5)
     }
     
+    // ... keep all your other helper methods unchanged ...
+    
     // Medical conditions card (static example)
     private func medicalConditionsCard() -> some View {
         VStack(alignment: .leading, spacing: 15) {
@@ -163,7 +223,6 @@ struct PatientHistoryView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 5)
     }
     
-    // Medical condition item
     private func medicalConditionItem(name: String, date: String, color: Color) -> some View {
         HStack {
             Circle()
@@ -183,7 +242,6 @@ struct PatientHistoryView: View {
         .cornerRadius(8)
     }
     
-    // Allergies card (static example)
     private func allergiesCard() -> some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("Reported Allergies")
@@ -214,7 +272,6 @@ struct PatientHistoryView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 5)
     }
     
-    // Allergy item
     private func allergyItem(name: String, severity: String, color: Color) -> some View {
         HStack {
             Circle()
@@ -234,7 +291,6 @@ struct PatientHistoryView: View {
         .cornerRadius(8)
     }
     
-    // Past appointments card
     private func pastAppointmentsCard(_ appointments: [Appointment]) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("Past Appointments")
@@ -282,7 +338,6 @@ struct PatientHistoryView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 5)
     }
     
-    // Prescriptions card
     private func prescriptionsCard(_ prescriptions: [Prescription]) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("Prescriptions")
@@ -333,14 +388,12 @@ struct PatientHistoryView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 5)
     }
     
-    // Helper to format date
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         return formatter.string(from: date)
     }
     
-    // Load patient data from backend
     private func loadPatientData() {
         isLoading = true
         errorMessage = ""
@@ -350,8 +403,6 @@ struct PatientHistoryView: View {
             switch result {
             case .success(let patient):
                 self.patient = patient
-                
-                // Now load patient history
                 self.loadPatientHistory()
             case .failure(let error):
                 self.isLoading = false
@@ -360,11 +411,9 @@ struct PatientHistoryView: View {
         }
     }
     
-    // Load patient history from backend
     private func loadPatientHistory() {
         NetworkManager.shared.fetchData(endpoint: "/patient-history/\(patientId)") { (result: Result<PatientHistory, Error>) in
             self.isLoading = false
-            
             switch result {
             case .success(let history):
                 self.patientHistory = history
