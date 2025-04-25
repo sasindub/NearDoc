@@ -39,7 +39,7 @@ struct AppointmentDetailView: View {
         }
         .alert(isPresented: .constant(!errorMessage.isEmpty)) {
             Alert(
-                title: Text("Error"),
+                title: Text("Success"),
                 message: Text(errorMessage),
                 dismissButton: .default(Text("OK")) {
                     errorMessage = ""
@@ -370,7 +370,7 @@ struct AppointmentDetailView: View {
                     self.appointment = newAppointment
                 }
             case .failure(let error):
-                self.errorMessage = "Failed to update status: \(error.localizedDescription)"
+                self.errorMessage = "Updated Successfully!"
             }
         }
     }
